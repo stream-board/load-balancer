@@ -19,3 +19,4 @@ ADD nginx.conf /etc/consul-templates/nginx.conf
 RUN chmod a+x /etc/service/nginx/run
 RUN chmod a+x /etc/service/consul-template/run
 CMD ["/usr/bin/runsvdir", "/etc/service"]
+
