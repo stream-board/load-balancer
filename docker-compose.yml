@@ -1,0 +1,63 @@
+version: '2.1'
+services:
+  consul:
+    image: progrium/consul:latest
+    command: -server -bootstrap -advertise 172.17.0.1
+    ports:
+      - "8300:8300"
+      - "8400:8400"
+      - "8500:8500"
+      - "8600:53/udp"
+  registrator:
+    image: gliderlabs/registrator:latest
+    command: consul://consul:8500
+    links:
+      - consul
+    volumes:
+      - "/var/run/docker.sock:/tmp/docker.sock"
+  proxy:
+    image: lacardenasv/load-balancer
+    ports:
+      - "80:80"
+    links:
+      - consul
+  chat-ms:
+    image: lacardenasv/2e_chat_ms
+    command: bash -c "python3.6 manage.py runserver 0.0.0.0:4004"
+    environment:
+      SERVICE_NAME: chat-ms
+      SERVICE_TAGS: development
+      PORT: '4004'
+    ports:
+      - "4004:4004"
+    deploy:
+      replicas: 2
+    depends_on:  
+      - chat-db-1
+      - chat-db
+  chat-db-1:
+    image: redis:latest
+  chat-db:
+    image: mysql:5.7.22
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: chatStreamBoard
+      MYSQL_USER: user
+      MYSQL_PASSWORD: chatStreamBoard
+      MYSQL_DATABASE: chat_ms_development
+      MYSQL_HOST: chat-db
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8090:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - webnet
+networks:
+  webnet:
+    
